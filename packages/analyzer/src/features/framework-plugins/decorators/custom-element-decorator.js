@@ -16,7 +16,8 @@ export function customElementDecoratorPlugin() {
 
         if(customElementDecorator) {
           const className = node.name.text;
-          const tagName = getElementNameFromDecorator(customElementDecorator);
+          const sourceFile = node.getSourceFile();
+          const tagName = getElementNameFromDecorator(customElementDecorator, sourceFile);
 
           const definitionDoc = {
             kind: 'custom-element-definition',

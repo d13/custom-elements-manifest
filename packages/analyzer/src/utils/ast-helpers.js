@@ -55,7 +55,7 @@ export function hasInitializer(node) {
   return node?.declarationList?.declarations?.some(declaration => declaration?.initializer);
 }
 
-export function getElementNameFromDecorator(decorator) {
+export function getElementNameFromDecorator(decorator, moduleNode) {
   const argument = decorator.expression.arguments[0];
 
   /**
@@ -79,6 +79,20 @@ export function getElementNameFromDecorator(decorator) {
       }
     });
     return result;
+  }
+
+  /**
+   * @example 
+   * const tagName = 'my-el';
+   * @customElement(tagName)
+   */
+  if(argument.kind === ts.SyntaxKind.Identifier) {
+    const variableName = argument.getText();
+    // Look for the variable declaration in the module
+    const variableDeclaration = findVariableDeclaration(moduleNode, variableName);
+    if(variableDeclaration && variableDeclaration.kind === ts.SyntaxKind.StringLiteral) {
+      return variableDeclaration.text;
+    }
   }
 }
 
@@ -183,4 +197,27 @@ export function getDeclarationInFile(nodeOrName, sourceFile) {
     else if (statement.name?.getText)
       return statement.name.getText() === name;
   });
+}
+
+/**
+ * Find a variable declaration by name in a source file
+ * @param {import('typescript').SourceFile} sourceFile
+ * @param {string} variableName
+ * @return {import('typescript').Node}
+ */
+export function findVariableDeclaration(sourceFile, variableName) {
+  const sourceFileStatements = sourceFile.statements ?? [];
+  
+  for (const statement of sourceFileStatements) {
+    if (ts.isVariableStatement(statement)) {
+      const declaration = statement.declarationList.declarations.find(
+        decl => decl.name.getText() === variableName
+      );
+      if (declaration && declaration.initializer) {
+        return declaration.initializer;
+      }
+    }
+  }
+  
+  return undefined;
 }
